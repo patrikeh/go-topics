@@ -1,7 +1,10 @@
 package words
 
 import (
+	"bufio"
+	"io"
 	"regexp"
+	"strings"
 )
 
 type Filter func(string) bool
@@ -9,57 +12,78 @@ type Transformation func(string) string
 type Filters []Filter
 type Transformations []Transformation // i.e. stemming, lemmatization, etc
 type Processor struct {
-	regex           *regexp.Regexp
 	filters         Filters
 	transformations Transformations
 }
 
-func NewProcessor(wordRegex string,
-	filters Filters,
+func NewDefaultProcessor() *Processor {
+	return NewProcessor(
+		Filters{},
+		Transformations{ToLower, Sanitize},
+	)
+}
+func NewProcessor(filters Filters,
 	transformations Transformations) *Processor {
-	regex, _ := regexp.Compile(wordRegex)
+
 	return &Processor{
-		regex:           regex,
 		filters:         filters,
 		transformations: transformations,
 	}
 }
 
-/*
-func (p *Processor) FromFiles(documents []os.File) *Corpus {
+func (p *Processor) AddDocs(corpus *Corpus, docs []io.Reader) *Corpus {
 
-}
-func (p *Processor) FromStrings(documents []string) *Corpus {
-
-}
-*/
-/*
-FromFiles
-FromStrings
-*/
-/* func (p *Processor) Process(documents []io.Reader) Corpus {
-	corpus := NewCorpus()
-	for _, w := range something {
-		if p.filter(w) {
-			continue
+	for _, doc := range docs {
+		err := p.AddDoc(corpus, doc)
+		if err != nil {
+			panic(err)
 		}
-		w = p.transform(w)
 	}
 
+	return corpus
 }
-*/
-// Process filters & transforms input, builds vocab
-/* func (p *Processor) ProcessFiles(files []os.File) Collection {
 
-} */
+func (p *Processor) AddDoc(corpus *Corpus, doc io.Reader) error {
+	document, err := p.processDocument(doc, "", corpus.Vocabulary)
+	if err != nil {
+		panic(err)
+	}
+	corpus.Documents = append(corpus.Documents, *document)
+	return nil
+}
+
+func (p *Processor) processDocument(input io.Reader, name string, vocab *Vocabulary) (*Document, error) {
+	s := bufio.NewScanner(input)
+	s.Split(bufio.ScanWords)
+
+	document := NewDocument(name)
+
+	for s.Scan() {
+		w := s.Text()
+		w, ok := p.processWord(w)
+		if !ok {
+			continue
+		}
+
+		document.Add(vocab.Set(w))
+	}
+	return document, nil
+}
+
+func (p *Processor) processWord(w string) (string, bool) {
+	if p.filter(w) {
+		return "", false
+	}
+	return p.transform(w), true
+}
 
 func (p *Processor) filter(w string) bool {
 	for _, f := range p.filters {
 		if f(w) {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (p *Processor) transform(w string) string {
@@ -80,4 +104,14 @@ func StopWordFilter(word string) bool {
 		return false
 	}
 	return true
+}
+
+func ToLower(w string) string {
+	return strings.ToLower(w)
+}
+
+var reg = regexp.MustCompile("[a-zA-Z]+")
+
+func Sanitize(w string) string {
+	return reg.FindString(w)
 }

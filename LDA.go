@@ -21,18 +21,17 @@ func NewLDA(config *Configuration) *LDA {
 	}
 }
 
-func (l LDA) Train(corpus *Corpus, numIterations, numTopics int) (*Topics, error) {
+func (l *LDA) Train(corpus *Corpus, numIterations, numTopics int) (*Topics, error) {
 	l.corpus = corpus
 	err := l.init(corpus, numTopics)
 	if err != nil {
 		return nil, fmt.Errorf("error initiating LDA - %s", err.Error())
 	}
-
 	return l.topics, nil
 }
 
 // Initiate variables, MCMC set to random state
-func (l LDA) init(corpus *Corpus, numTopics int) error {
+func (l *LDA) init(corpus *Corpus, numTopics int) error {
 	if corpus == nil || corpus.Vocabulary == nil {
 		return fmt.Errorf("missing corpus or vocabulary")
 	}

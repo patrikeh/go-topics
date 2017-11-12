@@ -5,15 +5,27 @@ type Corpus struct {
 	Vocabulary *Vocabulary
 }
 
-func NewCorpus() Corpus {
-	return Corpus{
+func NewCorpus() *Corpus {
+	return &Corpus{
+		Documents:  []Document{},
 		Vocabulary: NewVocabulary(),
 	}
 }
 
 type Document struct {
 	Name  string
-	Words []int // Vocabulary word indices
+	Words []int // sequence - vocabulary word indices
+}
+
+func NewDocument(name string) *Document {
+	return &Document{
+		Name:  name,
+		Words: make([]int, 0, 0),
+	}
+}
+
+func (d *Document) Add(word int) {
+	d.Words = append(d.Words, word)
 }
 
 type Vocabulary struct {
@@ -28,12 +40,14 @@ func NewVocabulary() *Vocabulary {
 	}
 }
 
-func (v *Vocabulary) Set(w string) {
-	if _, found := v.Indices[w]; found {
-		return
+func (v *Vocabulary) Set(w string) int {
+	if idx, found := v.Indices[w]; found {
+		return idx
 	}
 	v.Words = append(v.Words, w)
-	v.Indices[w] = len(v.Words) - 1
+	idx := len(v.Words) - 1
+	v.Indices[w] = idx
+	return idx
 }
 
 type Topics struct {
