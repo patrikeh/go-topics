@@ -7,7 +7,7 @@ import (
 )
 
 func Test_LDA(t *testing.T) {
-	lda := NewLDA(&Configuration{})
+	lda := NewSimpleLDA(&Configuration{})
 	corpus := NewCorpus()
 	_, err := lda.Train(corpus, 100, 10)
 	assert.Nil(t, err)

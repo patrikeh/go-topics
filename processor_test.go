@@ -1,7 +1,6 @@
 package words
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -16,9 +15,9 @@ func Test_processDocument(t *testing.T) {
 		expectedVocabSize int
 		expectedSequence  []int
 	}{
-		{"this is a sentence", 4, []int{0, 1, 2, 3}},
-		{"Is this a sentence", 4, []int{1, 0, 2, 3}},
-		{"another sentence", 5, []int{4, 3}},
+		{"this is a sentence.", 4, []int{0, 1, 2, 3}},
+		{"Is this a sentence?", 4, []int{1, 0, 2, 3}},
+		{"another, sentence", 5, []int{4, 3}},
 	}
 	c := NewCorpus()
 
@@ -29,8 +28,8 @@ func Test_processDocument(t *testing.T) {
 		assert.Equal(t, test.expectedSequence, c.Documents[i].Words)
 	}
 
-	l := NewLDA(&Configuration{})
+	/* l := NewSimpleLDA(&Configuration{})
 	topics, err := l.Train(c, 100, 10)
 	assert.Nil(t, err)
-	fmt.Printf("%+v", topics)
+	fmt.Printf("%+v", topics) */
 }
