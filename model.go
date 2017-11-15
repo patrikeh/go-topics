@@ -13,19 +13,22 @@ func NewCorpus() *Corpus {
 }
 
 type Document struct {
-	Name  string
-	Words []int // sequence - vocabulary word indices
+	Name        string
+	Words       []int       // idx ordered sequence - stores vocabulary word indices
+	Frequencies map[int]int // idx by vocabulary word id
 }
 
 func NewDocument(name string) *Document {
 	return &Document{
-		Name:  name,
-		Words: make([]int, 0, 0),
+		Name:        name,
+		Words:       make([]int, 0, 0),
+		Frequencies: make(map[int]int, 0),
 	}
 }
 
 func (d *Document) Add(word int) {
 	d.Words = append(d.Words, word)
+	d.Frequencies[word] = d.Frequencies[word] + 1
 }
 
 type Vocabulary struct {
@@ -38,6 +41,10 @@ func NewVocabulary() *Vocabulary {
 		Words:   make([]string, 0),
 		Indices: map[string]int{},
 	}
+}
+
+func (v *Vocabulary) Size() int {
+	return len(v.Words)
 }
 
 func (v *Vocabulary) Set(w string) int {

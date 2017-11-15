@@ -5,7 +5,6 @@ type Inferer interface {
 }
 
 type Configuration struct {
-	Alpha        float64
-	Beta         float64
 	Parallellism int
+	Debug        bool
 }

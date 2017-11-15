@@ -2,31 +2,26 @@ package words
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"os"
 	"regexp"
 	"strings"
 )
 
-type Filter func(string) bool
-type Transformation func(string) string
-type Filters []Filter
+type Transformation func(word string) (new string, keep bool)
 type Transformations []Transformation // i.e. stemming, lemmatization, etc
 type Processor struct {
-	filters         Filters
 	transformations Transformations
 }
 
 func NewDefaultProcessor() *Processor {
 	return NewProcessor(
-		Filters{},
-		Transformations{ToLower, Sanitize},
+		Transformations{ToLower, Sanitize, PruneStopWord},
 	)
 }
-func NewProcessor(filters Filters,
-	transformations Transformations) *Processor {
-
+func NewProcessor(transformations Transformations) *Processor {
 	return &Processor{
-		filters:         filters,
 		transformations: transformations,
 	}
 }
@@ -60,58 +55,56 @@ func (p *Processor) processDocument(input io.Reader, name string, vocab *Vocabul
 
 	for s.Scan() {
 		w := s.Text()
-		w, ok := p.processWord(w)
-		if !ok {
+		w, keep := p.transform(w)
+		if !keep {
 			continue
 		}
-
 		document.Add(vocab.Set(w))
 	}
 	return document, nil
 }
 
-func (p *Processor) processWord(w string) (string, bool) {
-	if p.filter(w) {
-		return "", false
-	}
-	return p.transform(w), true
-}
-
-func (p *Processor) filter(w string) bool {
-	for _, f := range p.filters {
-		if f(w) {
-			return true
+func (p *Processor) transform(w string) (string, bool) {
+	var keep bool
+	for _, t := range p.transformations {
+		w, keep = t(w)
+		if !keep {
+			return "", false
 		}
 	}
-	return false
+	return w, true
 }
 
-func (p *Processor) transform(w string) string {
-	for _, t := range p.transformations {
-		w = t(w)
+var StopWord = func(path string) map[string]bool {
+	f, err := os.Open(path)
+	defer f.Close()
+	if err != nil {
+		fmt.Printf("%+v", err)
+		return nil
 	}
-	return w
-}
 
-var StopWord = map[string]bool{
-	"this": true,
-	"I":    true,
-	"that": true,
-}
+	s := bufio.NewScanner(f)
 
-func StopWordFilter(word string) bool {
-	if StopWord[word] {
-		return false
+	words := make(map[string]bool, 0)
+	for s.Scan() {
+		words[s.Text()] = true
 	}
-	return true
+	return words
+}("stopwords/english")
+
+func PruneStopWord(w string) (string, bool) {
+	if StopWord[w] {
+		return "", false
+	}
+	return w, true
 }
 
-func ToLower(w string) string {
-	return strings.ToLower(w)
+func ToLower(w string) (string, bool) {
+	return strings.ToLower(w), true
 }
 
-var reg = regexp.MustCompile("[a-zA-Z]+")
+var reg = regexp.MustCompile("[a-zA-Z']+")
 
-func Sanitize(w string) string {
-	return reg.FindString(w)
+func Sanitize(w string) (string, bool) {
+	return reg.FindString(w), true
 }
