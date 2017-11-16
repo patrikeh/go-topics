@@ -26,8 +26,18 @@ func NewProcessor(transformations Transformations) *Processor {
 	}
 }
 
-func (p *Processor) AddDocs(corpus *Corpus, docs []io.Reader) *Corpus {
+func (p *Processor) AddStrings(corpus *Corpus, docs []string) *Corpus {
+	for _, doc := range docs {
+		err := p.AddDoc(corpus, strings.NewReader(doc))
+		if err != nil {
+			panic(err)
+		}
+	}
 
+	return corpus
+}
+
+func (p *Processor) AddReaders(corpus *Corpus, docs []io.Reader) *Corpus {
 	for _, doc := range docs {
 		err := p.AddDoc(corpus, doc)
 		if err != nil {

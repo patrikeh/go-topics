@@ -3,6 +3,7 @@ package words
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/golang/glog"
@@ -32,9 +33,9 @@ func NewSimpleLDA(config *Configuration) *SimpleLDA {
 	}
 }
 
-func (l *SimpleLDA) Train(corpus *Corpus,
-	numIterations, numTopics int,
-	alpha, beta float64) (*Topics, error) {
+func (l *SimpleLDA) Init(corpus *Corpus,
+	numTopics int,
+	alpha, beta float64) error {
 	l.corpus = corpus
 	if alpha == 0.0 {
 		alpha = defaultAlphaSum / float64(numTopics)
@@ -45,15 +46,10 @@ func (l *SimpleLDA) Train(corpus *Corpus,
 	l.alpha, l.beta, l.betaSum = alpha, beta, float64(corpus.Vocabulary.Size())*beta
 	err := l.init(numTopics)
 	if err != nil {
-		return nil, fmt.Errorf("error initiating SimpleLDA - %s", err.Error())
+		return fmt.Errorf("error initiating SimpleLDA - %s", err.Error())
 	}
 
-	// Gibb's sampling
-	for it := 0; it < numIterations; it++ {
-		l.sample()
-	}
-
-	return l.topics, nil
+	return nil
 }
 
 // Initiate variables, MCMC set to random state
@@ -75,6 +71,17 @@ func (l *SimpleLDA) init(numTopics int) error {
 
 	}
 	return nil
+}
+
+// Gibb's sampling
+func (l *SimpleLDA) Train(n int) (*Topics, error) {
+	if l.topics == nil || l.corpus == nil {
+		return nil, fmt.Errorf("unable to run LDA - uninitiated")
+	}
+	for it := 0; it < n; it++ {
+		l.sample()
+	}
+	return l.topics, nil
 }
 
 // sample for all documents
@@ -114,7 +121,10 @@ func (l *SimpleLDA) sampleDoc(di int, doc Document) {
 			glog.Errorf("unable to sample topic for w(%d, %d) - %s", di, wi, err.Error())
 		}
 
-		l.assign(di, wi, newTopic)
+		l.topics.Topics[di][wi] = newTopic
+		l.topics.WordTopics[word][newTopic]++
+		l.topics.WordsPerTopic[newTopic]++
+		localTopics[newTopic]++
 	}
 }
 
@@ -133,7 +143,40 @@ func (l *SimpleLDA) sampleTopic(sum float64, multinomial []float64) (int, error)
 
 func (l *SimpleLDA) assign(di, wi, topic int) {
 	l.topics.Topics[di][wi] = topic
-	l.topics.DocTopics[di][topic]++
 	l.topics.WordTopics[l.corpus.Documents[di].Words[wi]][topic]++
 	l.topics.WordsPerTopic[topic]++
+}
+
+type TopicWord struct {
+	Occurrences int
+	Word        int
+}
+type TopicWords []TopicWord
+
+func (t TopicWords) Len() int           { return len(t) }
+func (t TopicWords) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t TopicWords) Less(i, j int) bool { return t[i].Occurrences < t[j].Occurrences }
+
+func (l SimpleLDA) PrintTopWords(n int) {
+
+	topicWords := make(TopicWords, l.topics.NumTokens, l.topics.NumTokens)
+	fmt.Printf("Topic \t Tokens \t Words\n")
+
+	for topic := 0; topic < l.topics.NumTopics; topic++ {
+		for w := 0; w < l.topics.NumTypes; w++ {
+			topicWords[w] = TopicWord{
+				Word:        w,
+				Occurrences: l.topics.WordTopics[w][topic],
+			}
+		}
+		sort.Sort(sort.Reverse(topicWords))
+
+		words := ""
+		for i := 0; i < n; i++ {
+			words = fmt.Sprintf("%s %s(%d)", words, l.corpus.Vocabulary.Words[topicWords[i].Word], topicWords[i].Occurrences)
+		}
+		fmt.Printf("%d \t %d \t %s\n", topic, l.topics.WordsPerTopic[topic], words)
+
+	}
+
 }

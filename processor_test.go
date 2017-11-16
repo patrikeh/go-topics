@@ -1,7 +1,6 @@
 package words
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -27,9 +26,4 @@ func Test_processDocument(t *testing.T) {
 		assert.Len(t, c.Vocabulary.Words, test.expectedVocabSize)
 		assert.Equal(t, test.expectedSequence, c.Documents[i].Words)
 	}
-
-	l := NewSimpleLDA(&Configuration{})
-	topics, err := l.Train(c, 100, 10, 0, 0)
-	assert.Nil(t, err)
-	fmt.Printf("%+v", topics)
 }
