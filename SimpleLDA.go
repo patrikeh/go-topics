@@ -94,25 +94,20 @@ func (l *SimpleLDA) sample() {
 // sample per document
 func (l *SimpleLDA) sampleDoc(di int, doc Document) {
 
-	localTopics := make([]int, l.topics.NumTopics, l.topics.NumTopics)
-	for wi := range doc.Words {
-		localTopics[l.topics.Topics[di][wi]]++
-	}
-
 	topicScores := make([]float64, l.topics.NumTopics, l.topics.NumTopics)
 	for wi, word := range doc.Words {
 		currTopic := l.topics.Topics[di][wi]
 		wordTopic := l.topics.WordTopics[word]
 
-		localTopics[currTopic]--
-		wordTopic[currTopic]--
+		l.topics.DocTopics[di][currTopic]--
 		l.topics.WordsPerTopic[currTopic]--
+		wordTopic[currTopic]--
 
 		var sum float64
 		for topic := 0; topic < l.topics.NumTopics; topic++ {
-			topicScores[topic] = (l.alpha + float64(localTopics[topic])) *
-				((l.beta+float64(wordTopic[topic]))/
-					l.betaSum + float64(l.topics.WordsPerTopic[topic]))
+			topicScores[topic] = (l.alpha + float64(l.topics.DocTopics[di][topic])) *
+				((l.beta + float64(wordTopic[topic])) /
+					(l.betaSum + float64(l.topics.WordsPerTopic[topic])))
 			sum += topicScores[topic]
 		}
 
@@ -121,10 +116,7 @@ func (l *SimpleLDA) sampleDoc(di int, doc Document) {
 			glog.Errorf("unable to sample topic for w(%d, %d) - %s", di, wi, err.Error())
 		}
 
-		l.topics.Topics[di][wi] = newTopic
-		l.topics.WordTopics[word][newTopic]++
-		l.topics.WordsPerTopic[newTopic]++
-		localTopics[newTopic]++
+		l.assign(di, wi, newTopic)
 	}
 }
 
@@ -143,6 +135,7 @@ func (l *SimpleLDA) sampleTopic(sum float64, multinomial []float64) (int, error)
 
 func (l *SimpleLDA) assign(di, wi, topic int) {
 	l.topics.Topics[di][wi] = topic
+	l.topics.DocTopics[di][topic]++
 	l.topics.WordTopics[l.corpus.Documents[di].Words[wi]][topic]++
 	l.topics.WordsPerTopic[topic]++
 }

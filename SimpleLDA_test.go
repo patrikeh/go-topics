@@ -8,11 +8,11 @@ import (
 )
 
 var docs = []string{
-	"I like to eat broccoli and bananas.",
+	"I like to eat broccoli and bananas yum.",
 	"I ate a banana and spinach smoothie for breakfast.",
 	"Chinchillas and kittens are cute.",
-	"My sister adopted a kitten yesterday.",
-	"Look at this cute hamster munching on a piece of broccoli.",
+	"My sister adopted cute kittens yesterday.",
+	"Look at this cute hamster munching on a piece of chinchillas.",
 }
 
 func Test_LDA(t *testing.T) {
@@ -25,7 +25,7 @@ func Test_LDA(t *testing.T) {
 	err := lda.Init(corpus, 2, 0, 0)
 	assert.Nil(t, err)
 
-	_, err = lda.Train(4)
+	_, err = lda.Train(1000)
 	assert.Nil(t, err)
 	lda.PrintTopWords(10)
 
