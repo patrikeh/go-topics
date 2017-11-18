@@ -169,7 +169,5 @@ func (l SimpleLDA) PrintTopWords(n int) {
 			words = fmt.Sprintf("%s %s(%d)", words, l.corpus.Vocabulary.Words[topicWords[i].Word], topicWords[i].Occurrences)
 		}
 		fmt.Printf("%d \t %d \t %s\n", topic, l.topics.WordsPerTopic[topic], words)
-
 	}
-
 }
