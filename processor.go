@@ -78,11 +78,37 @@ func (p *Processor) transform(w string) (string, bool) {
 	var keep bool
 	for _, t := range p.transformations {
 		w, keep = t(w)
-		if !keep {
+		if !keep || w == "" {
 			return "", false
 		}
 	}
 	return w, true
+}
+
+// Process one document corpus
+func (p *Processor) ImportSingleFileCorpus(corpus *Corpus, path string) (*Corpus, error) {
+	docs, err := p.importSingleFileCorpus(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.AddStrings(corpus, docs), err
+}
+
+// Read one document per line
+func (p *Processor) importSingleFileCorpus(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
 
 var StopWord = func(path string) map[string]bool {
@@ -116,5 +142,5 @@ func ToLower(w string) (string, bool) {
 var reg = regexp.MustCompile("[a-zA-Z']+")
 
 func Sanitize(w string) (string, bool) {
-	return reg.FindString(w), true
+	return strings.TrimSpace(reg.FindString(w)), true
 }
