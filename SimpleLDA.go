@@ -3,7 +3,9 @@ package words
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"sort"
+	"text/tabwriter"
 	"time"
 
 	"github.com/golang/glog"
@@ -80,6 +82,11 @@ func (l *SimpleLDA) Train(n int) (*Topics, error) {
 	}
 	for it := 0; it < n; it++ {
 		l.sample()
+
+		if it%l.config.PrintInterval == 0 && it != 0 {
+			fmt.Printf("Iteration %d:\n", it)
+			l.PrintTopWords(l.config.PrintNumWords)
+		}
 	}
 	return l.topics, nil
 }
@@ -151,10 +158,10 @@ func (t TopicWords) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 func (t TopicWords) Less(i, j int) bool { return t[i].Occurrences < t[j].Occurrences }
 
 func (l SimpleLDA) PrintTopWords(n int) {
+	writer := tabwriter.NewWriter(os.Stdout, 8, 8, 2, ' ', 0)
 
 	topicWords := make(TopicWords, l.topics.NumTokens, l.topics.NumTokens)
-	fmt.Printf("Topic \t Tokens \t Words\n")
-
+	fmt.Fprintln(writer, "Topic\tTokens\tWords")
 	for topic := 0; topic < l.topics.NumTopics; topic++ {
 		for w := 0; w < l.topics.NumTypes; w++ {
 			topicWords[w] = TopicWord{
@@ -164,10 +171,24 @@ func (l SimpleLDA) PrintTopWords(n int) {
 		}
 		sort.Sort(sort.Reverse(topicWords))
 
+		n = min(n, l.topics.NumTypes)
 		words := ""
 		for i := 0; i < n; i++ {
-			words = fmt.Sprintf("%s %s(%d)", words, l.corpus.Vocabulary.Words[topicWords[i].Word], topicWords[i].Occurrences)
+			word := fmt.Sprintf("%s(%d)", l.corpus.Vocabulary.Words[topicWords[i].Word], topicWords[i].Occurrences)
+			if i == 0 {
+				words = word
+			} else {
+				words = fmt.Sprintf("%s %s", words, word)
+			}
 		}
-		fmt.Printf("%d \t %d \t %s\n", topic, l.topics.WordsPerTopic[topic], words)
+		fmt.Fprintf(writer, "%d\t%d\t%s\n", topic, l.topics.WordsPerTopic[topic], words)
 	}
+	writer.Flush()
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }

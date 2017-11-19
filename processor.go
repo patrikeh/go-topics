@@ -17,7 +17,7 @@ type Processor struct {
 
 func NewDefaultProcessor() *Processor {
 	return NewProcessor(
-		Transformations{ToLower, Sanitize, PruneStopWord},
+		Transformations{ToLower, Sanitize, GetStopwordFilter("stopwords/en")},
 	)
 }
 func NewProcessor(transformations Transformations) *Processor {
@@ -111,7 +111,7 @@ func (p *Processor) importSingleFileCorpus(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-var StopWord = func(path string) map[string]bool {
+func GetStopwordFilter(path string) Transformation {
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -121,26 +121,41 @@ var StopWord = func(path string) map[string]bool {
 
 	s := bufio.NewScanner(f)
 
-	words := make(map[string]bool, 0)
+	stopWords := make(map[string]bool, 0)
 	for s.Scan() {
-		words[s.Text()] = true
+		stopWords[s.Text()] = true
 	}
-	return words
-}("stopwords/english")
 
-func PruneStopWord(w string) (string, bool) {
-	if StopWord[w] {
-		return "", false
-	}
-	return w, true
+	return func(stopWords map[string]bool) Transformation {
+		return func(w string) (string, bool) {
+			if stopWords[w] {
+				return "", false
+			}
+			return w, true
+		}
+	}(stopWords)
 }
 
 func ToLower(w string) (string, bool) {
 	return strings.ToLower(w), true
 }
 
-var reg = regexp.MustCompile("[a-zA-Z']+")
+var wordReg = regexp.MustCompile("[a-zA-Z'åäöÅÄÖ]+")
 
 func Sanitize(w string) (string, bool) {
-	return strings.TrimSpace(reg.FindString(w)), true
+	return strings.TrimSpace(wordReg.FindString(w)), true
+}
+
+func MinLen(w string) (string, bool) {
+	if len(w) < 2 {
+		return "", false
+	}
+	return w, true
+}
+
+func RemoveTwitterUsernames(w string) (string, bool) {
+	if strings.Contains(w, "@") {
+		return "", false
+	}
+	return w, true
 }

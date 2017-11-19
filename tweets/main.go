@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/dghubble/go-twitter/twitter"
@@ -28,7 +29,9 @@ func main() {
 		panic(err)
 	}
 
-	file, err := os.Create(os.Args[1] + "/" + os.Args[2])
+	fileName := os.Args[1] + "/" + os.Args[2]
+
+	file, err := os.Create(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -39,6 +42,8 @@ func main() {
 		fmt.Fprintln(w, tweet)
 	}
 	w.Flush()
+
+	fmt.Printf("wrote %d tweets to %s\n", len(tweets), fileName)
 }
 
 type Scraper struct {
@@ -55,19 +60,59 @@ func NewScraper(apiKey, apiSecret, accessToken, accessSecret string) *Scraper {
 }
 
 func (s *Scraper) Collect(query string, numTweets int) ([]string, error) {
+	tweets := make([]string, 0, 0)
+
+	n, rem := int(numTweets/100), numTweets%100
+
+	var next int64
+	for i := 0; i <= n; i++ {
+		if i == n {
+			if rem == 0 {
+				break
+			}
+			numTweets = rem
+		}
+		retrieved, maxID, err := s.GetTweets(query, numTweets, next)
+		next = maxID
+		if err != nil {
+			return nil, err
+		}
+
+		tweets = append(tweets, retrieved...)
+	}
+
+	return tweets, nil
+}
+
+func (s *Scraper) GetTweets(query string, numTweets int, maxID int64) ([]string, int64, error) {
 	search, resp, err := s.twitterClient.Search.Tweets(&twitter.SearchTweetParams{
-		Query:      query,
-		Count:      numTweets,
-		ResultType: "recent",
+		Query: query,
+		Count: numTweets,
+		MaxID: maxID, // Equals lowest ID of already retrieved
+		Lang:  "en",
 	})
 	defer resp.Body.Close()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	tweets := make([]string, len(search.Statuses), len(search.Statuses))
 	for i, tweet := range search.Statuses {
 		tweets[i] = tweet.Text
 	}
-	return tweets, nil
+
+	fmt.Printf("nextres: %s maxID: %d myMaxID: %d\n", search.Metadata.NextResults, search.Metadata.MaxID, getNext(search.Metadata.NextResults))
+
+	return tweets, getNext(search.Metadata.NextResults), nil
+}
+
+var nextResultRegex = regexp.MustCompile(`\d+`)
+
+func getNext(nextResult string) int64 {
+	idString := nextResultRegex.FindString(nextResult)
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return id
 }

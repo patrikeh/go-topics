@@ -5,6 +5,8 @@ type Inferer interface {
 }
 
 type Configuration struct {
-	Parallellism int
-	Debug        bool
+	Parallellism  int
+	Debug         bool
+	PrintInterval int
+	PrintNumWords int
 }
