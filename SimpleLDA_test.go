@@ -38,11 +38,11 @@ func Test_LDA(t *testing.T) {
 	processor := NewProcessor(
 		Transformations{ToLower, RemoveTwitterUsernames, Sanitize, MinLen, GetStopwordFilter("stopwords/en"), GetStopwordFilter("stopwords/se")},
 	)
-	corpus, err := processor.ImportSingleFileCorpus(NewCorpus(), "tweets/berlin")
+	corpus, err := processor.ImportSingleFileCorpus(NewCorpus(), "corpus/trump")
 	assert.Nil(t, err)
 
 	lda := NewSimpleLDA(&Configuration{PrintInterval: 500, PrintNumWords: 8})
-	err = lda.Init(corpus, 8, 0, 0)
+	err = lda.Init(corpus, 10, 0, 0)
 	assert.Nil(t, err)
 
 	_, err = lda.Train(10000)

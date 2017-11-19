@@ -79,6 +79,7 @@ func (s *Scraper) Collect(query string, numTweets int) ([]string, error) {
 		}
 
 		tweets = append(tweets, retrieved...)
+		fmt.Printf("Got %d tweets\n", len(tweets))
 	}
 
 	return tweets, nil
@@ -100,8 +101,6 @@ func (s *Scraper) GetTweets(query string, numTweets int, maxID int64) ([]string,
 	for i, tweet := range search.Statuses {
 		tweets[i] = tweet.Text
 	}
-
-	fmt.Printf("nextres: %s maxID: %d myMaxID: %d\n", search.Metadata.NextResults, search.Metadata.MaxID, getNext(search.Metadata.NextResults))
 
 	return tweets, getNext(search.Metadata.NextResults), nil
 }
