@@ -1,4 +1,4 @@
-package words
+package topics
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ const (
 )
 
 // Implements a simple non-parallel Latent Dirichlet Allocation
-type SimpleLDA struct {
+type LDA struct {
 	config  *Configuration
 	rng     *rand.Rand
 	topics  *Topics
@@ -27,15 +27,15 @@ type SimpleLDA struct {
 	betaSum float64 // beta * size(vocabulary) constant
 }
 
-func NewSimpleLDA(config *Configuration) *SimpleLDA {
+func NewLDA(config *Configuration) *LDA {
 	rng := rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
-	return &SimpleLDA{
+	return &LDA{
 		rng:    rng,
 		config: config,
 	}
 }
 
-func (l *SimpleLDA) Init(corpus *Corpus,
+func (l *LDA) Init(corpus *Corpus,
 	numTopics int,
 	alpha, beta float64) error {
 	l.corpus = corpus
@@ -48,14 +48,14 @@ func (l *SimpleLDA) Init(corpus *Corpus,
 	l.alpha, l.beta, l.betaSum = alpha, beta, float64(corpus.Vocabulary.Size())*beta
 	err := l.init(numTopics)
 	if err != nil {
-		return fmt.Errorf("error initiating SimpleLDA - %s", err.Error())
+		return fmt.Errorf("error initiating LDA - %s", err.Error())
 	}
 
 	return nil
 }
 
 // Initiate variables, MCMC set to random state
-func (l *SimpleLDA) init(numTopics int) error {
+func (l *LDA) init(numTopics int) error {
 	if l.corpus == nil || l.corpus.Vocabulary == nil {
 		return fmt.Errorf("missing corpus or vocabulary")
 	}
@@ -76,14 +76,14 @@ func (l *SimpleLDA) init(numTopics int) error {
 }
 
 // Gibb's sampling
-func (l *SimpleLDA) Train(n int) (*Topics, error) {
+func (l *LDA) Train(n int) (*Topics, error) {
 	if l.topics == nil || l.corpus == nil {
 		return nil, fmt.Errorf("unable to run LDA - uninitiated")
 	}
 	for it := 0; it < n; it++ {
 		l.sample()
 
-		if it%l.config.PrintInterval == 0 && it != 0 {
+		if l.config.Verbose && it%l.config.PrintInterval == 0 && it != 0 {
 			fmt.Printf("Iteration %d:\n", it)
 			l.PrintTopWords(l.config.PrintNumWords)
 		}
@@ -92,14 +92,14 @@ func (l *SimpleLDA) Train(n int) (*Topics, error) {
 }
 
 // sample for all documents
-func (l *SimpleLDA) sample() {
+func (l *LDA) sample() {
 	for i, doc := range l.corpus.Documents {
 		l.sampleDoc(i, doc)
 	}
 }
 
 // sample per document
-func (l *SimpleLDA) sampleDoc(di int, doc Document) {
+func (l *LDA) sampleDoc(di int, doc Document) {
 
 	topicScores := make([]float64, l.topics.NumTopics, l.topics.NumTopics)
 	for wi, word := range doc.Words {
@@ -127,7 +127,7 @@ func (l *SimpleLDA) sampleDoc(di int, doc Document) {
 	}
 }
 
-func (l *SimpleLDA) sampleTopic(sum float64, multinomial []float64) (int, error) {
+func (l *LDA) sampleTopic(sum float64, multinomial []float64) (int, error) {
 	sample := l.rng.Float64() * sum
 	n := len(multinomial)
 	for sample > 0.0 {
@@ -140,7 +140,7 @@ func (l *SimpleLDA) sampleTopic(sum float64, multinomial []float64) (int, error)
 	return n, nil
 }
 
-func (l *SimpleLDA) assign(di, wi, topic int) {
+func (l *LDA) assign(di, wi, topic int) {
 	l.topics.Topics[di][wi] = topic
 	l.topics.DocTopics[di][topic]++
 	l.topics.WordTopics[l.corpus.Documents[di].Words[wi]][topic]++
@@ -157,7 +157,7 @@ func (t TopicWords) Len() int           { return len(t) }
 func (t TopicWords) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 func (t TopicWords) Less(i, j int) bool { return t[i].Occurrences < t[j].Occurrences }
 
-func (l SimpleLDA) PrintTopWords(n int) {
+func (l LDA) PrintTopWords(n int) {
 	writer := tabwriter.NewWriter(os.Stdout, 8, 8, 2, ' ', 0)
 
 	topicWords := make(TopicWords, l.topics.NumTokens, l.topics.NumTokens)
