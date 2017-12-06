@@ -1,4 +1,4 @@
-package words
+package topics
 
 type Corpus struct {
 	Documents  []Document
