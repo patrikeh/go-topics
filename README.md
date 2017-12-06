@@ -1,5 +1,5 @@
 # go-topics
-A very basic LDA implementation with some convenient utilities.
+A very basic LDA (Latent Dirichlet Allocation) implementation with some convenient utilities.
 
 ## Usage
 Create a processor from a set of transformations of the form ```func(word string) (new string, keep bool)```, that may filter or transform words:
