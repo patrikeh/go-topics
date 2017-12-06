@@ -18,9 +18,9 @@ corpus, err := processor.ImportSingleFileCorpus(topics.NewCorpus(), "./corpus")
 Run LDA and print the results:
 ```
 lda := topics.NewLDA(&topics.Configuration{Verbose: true, PrintInterval: 500, PrintNumWords: 8})
-err = lda.Init(corpus, 2, 0, 0) // Iterations, α, β hyperparameters
+err = lda.Init(corpus, 2, 0, 0) // K (number of topics), α, β (Dirichlet distribution smoothing factors)
 
-_, err = lda.Train(1000)
+_, err = lda.Train(1000) // Number of iterations
 lda.PrintTopWords(5)
 ```
 Resulting in something like:
