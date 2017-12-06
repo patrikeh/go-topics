@@ -2,7 +2,7 @@
 A very basic LDA (Latent Dirichlet Allocation) implementation with some convenient utilities.
 
 ## Usage
-Create a processor from a set of transformations of the form ```func(word string) (new string, keep bool)```, that may filter or transform words:
+Create a processor from a set of transformations of the form ```func(word string) (new string, keep bool)```:
 ```
 processor := topics.NewProcessor(
   topics.Transformations{
