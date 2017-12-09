@@ -13,7 +13,15 @@ processor := topics.NewProcessor(
 ```
 Read data and apply transformations to build a corpus:
 ```
-corpus, err := processor.ImportSingleFileCorpus(topics.NewCorpus(), "./corpus")
+var docs = []string{
+	"I like to eat broccoli and bananas.",
+	"I ate a banana and spinach smoothie for breakfast.",
+	"Chinchillas and kittens are cute.",
+	"My sister adopted cute kittens yesterday.",
+	"Look at this cute hamster munching on a piece of chinchillas.",
+}
+
+corpus, err := processor.AddStrings(topics.NewCorpus(), docs)
 ```
 Run LDA and print the results:
 ```
