@@ -3,7 +3,7 @@ A very basic LDA (Latent Dirichlet Allocation) implementation with some convenie
 
 ## Usage
 Create a processor from a set of transformations of the form ```func(word string) (new string, keep bool)```:
-```
+```go
 processor := topics.NewProcessor(
   topics.Transformations{
     topics.ToLower, 
@@ -12,7 +12,7 @@ processor := topics.NewProcessor(
     topics.GetStopwordFilter("../stopwords/en")})
 ```
 Read data and apply transformations to build a corpus:
-```
+```go
 var docs = []string{
 	"I like to eat broccoli and bananas.",
 	"I ate a banana and spinach smoothie for breakfast.",
@@ -24,7 +24,7 @@ var docs = []string{
 corpus, err := processor.AddStrings(topics.NewCorpus(), docs)
 ```
 Run LDA and print the results:
-```
+```go
 lda := topics.NewLDA(&topics.Configuration{Verbose: true, PrintInterval: 500, PrintNumWords: 8})
 err = lda.Init(corpus, 2, 0, 0) // K (number of topics), α, β (Dirichlet distribution smoothing factors)
 
