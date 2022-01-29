@@ -1,8 +1,0 @@
-package: github.com/patrikeh/go-words
-import:
-- package: github.com/golang/glog
-- package: github.com/dghubble/go-twitter
-testImport:
-- package: github.com/stretchr/testify
-  subpackages:
-  - assert
